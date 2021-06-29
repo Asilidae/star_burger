@@ -5,6 +5,9 @@ import json
 from .models import Product, Order, OrderProduct
 from rest_framework.decorators import api_view
 from .serializers import OrderSerializer
+from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.response import Response
+
 
 def banners_list_api(request):
     # FIXME move data to db?
@@ -57,12 +60,18 @@ def product_list_api(request):
         'indent': 4,
     })
 
+
 @api_view(['POST'])
 def register_order(request):
-    # order_data = json.loads(request.body.decode())
     order_data = OrderSerializer(data=request.data)
     order_data.is_valid()
-    print(order_data)
+
+    products = order_data.data.get('products')
+    if not products:
+        return Response({'Error': 'Got null products.'}, status=HTTP_400_BAD_REQUEST)
+    if not isinstance(products, list):
+        return Response({'Error': 'Wrong products type, list expected.'},
+                        status=HTTP_400_BAD_REQUEST)
 
     order = Order.objects.create(
         firstname=order_data.data['firstname'],
@@ -76,7 +85,5 @@ def register_order(request):
             quantity=product['quantity'],
             order=order
         )
-
-
 
     return JsonResponse({})
