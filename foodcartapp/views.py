@@ -3,7 +3,8 @@ from django.templatetags.static import static
 import json
 
 from .models import Product, Order, OrderProduct
-
+from rest_framework.decorators import api_view
+from .serializers import OrderSerializer
 
 def banners_list_api(request):
     # FIXME move data to db?
@@ -56,20 +57,26 @@ def product_list_api(request):
         'indent': 4,
     })
 
-
+@api_view(['POST'])
 def register_order(request):
-    order_data = json.loads(request.body.decode())
-    print(order_data['firstname'])
+    # order_data = json.loads(request.body.decode())
+    order_data = OrderSerializer(data=request.data)
+    order_data.is_valid()
+    print(order_data)
+
     order = Order.objects.create(
-        firstname=order_data['firstname'],
-        lastname=order_data['lastname'],
-        phonenumber=order_data['phonenumber'],
-        address=order_data['address']
+        firstname=order_data.data['firstname'],
+        lastname=order_data.data['lastname'],
+        phonenumber=order_data.data['phonenumber'],
+        address=order_data.data['address']
     )
-    for product in order_data['products']:
+    for product in order_data.data['products']:
         OrderProduct.objects.create(
             product=Product.objects.get(pk=product['product']),
             quantity=product['quantity'],
             order=order
         )
+
+
+
     return JsonResponse({})
