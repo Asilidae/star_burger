@@ -5,7 +5,7 @@ import json
 from .models import Product, Order, OrderProduct
 from rest_framework.decorators import api_view
 from .serializers import OrderSerializer
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.response import Response
 
 
@@ -66,12 +66,31 @@ def register_order(request):
     order_data = OrderSerializer(data=request.data)
     order_data.is_valid()
 
+    required_fields = ['firstname', 'lastname', 'phonenumber', 'address']
+    for field_name in required_fields:
+        field_value = order_data.data.get(field_name)
+        if not field_value:
+            return Response({'Error': f'Field {field_name} can\'t be null.'},
+                            status=HTTP_400_BAD_REQUEST)
+        elif not isinstance(field_value, str):
+            return Response({'Error': f'Field {field_name} must be string.'},
+                            status=HTTP_400_BAD_REQUEST)
+
+
     products = order_data.data.get('products')
     if not products:
         return Response({'Error': 'Got null products.'}, status=HTTP_400_BAD_REQUEST)
     if not isinstance(products, list):
         return Response({'Error': 'Wrong products type, list expected.'},
                         status=HTTP_400_BAD_REQUEST)
+
+    for product_data in products:
+        if isinstance(product_data, int):
+            Product.objects.get(pk=product_data['product'])
+        else:
+            return Response({'Error': f'No such product: {product_data["product"]}'},
+                            status=HTTP_404_NOT_FOUND)
+
 
     order = Order.objects.create(
         firstname=order_data.data['firstname'],
