@@ -5,7 +5,6 @@ import json
 from .models import Product, Order, OrderProduct
 from rest_framework.decorators import api_view
 from .serializers import OrderSerializer
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.response import Response
 
 
@@ -71,12 +70,11 @@ def register_order(request):
         phonenumber=order_data.validated_data['phonenumber'],
         address=order_data.validated_data['address']
     )
-    print(order_data.validated_data['firstname'])
     for product in order_data.validated_data['products']:
         OrderProduct.objects.create(
-            product=Product.objects.get(pk=product['product']),
+            product=product['product'],
             quantity=product['quantity'],
             order=order
         )
-
-    return JsonResponse({})
+    order_serializer = OrderSerializer(order)
+    return Response(order_serializer.data, status=201)
